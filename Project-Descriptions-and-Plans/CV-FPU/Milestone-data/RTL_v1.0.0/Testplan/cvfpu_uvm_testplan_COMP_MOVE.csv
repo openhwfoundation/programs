@@ -1,0 +1,121 @@
+Requirement Location,Feature,Sub Feature,Feature Description,Verification Goal,Pass/Fail Criteria,Coverage Method,Implementation,Tests,Notes
+"RISC-V Unpriv. ISA, F extension: Single-Precision Floating-Point Compare Instructions
+RISC-V Unpriv. ISA, D extension: Double-Precision Floating-Point Compare Instructions
+RISC-V Unpriv. ISA, Zfh chapter (CVA6 XF16 config): Half-Precision Floating-Point Compare Instructions
+IEEE 754-2008: 5.6.1 (compareQuietEqual, compareSignalingLess/LessEqual), 5.11",CG_CMP,FEQ / FLT / FLE (.S/.D/.H),"rd (integer) = 1 if the relation holds, else 0.
+- FEQ is quiet: NV only for an sNaN operand.
+- FLT/FLE are signaling: NV for any NaN operand.
+- Any NaN operand → rd = 0.
+- −0 == +0.","1. 3 ops × every operand-class pair × fmt (3 × 10 × 10 × 3 = 900 bins).
+2. 3 ops × result 0/1 × fmt (18 bins).
+3. fflags: no exception, NV.","fpu_sb compares every response against the C/MPFR ref model:
+- result_o bit-exact (incl. NaN-boxing of FP32/FP16 results)
+- fpu_exception_o.cause (fflags) bit-exact
+- each response matched to its request by trans_id; a response with no pending request is an error
+Pass = 0 UVM_ERROR / UVM_FATAL in the test log.",Functional Coverage (covergroup),"fpu_noncomput_cov::cg_compare
+- cx_fcmp_op1_x_op2: cp_op × cp_op1_class × cp_op2_class × cp_fmt
+- cx_fcmp_op_x_res: cp_op × cp_result × cp_fmt
+- cp_flags {NO_EXCEPTION, NV}
+Op decoded from rm[1:0] (0 = FLE, 1 = FLT, 2 = FEQ).","fpu_random_test, fpu_single_op_test, fpu_op_group_test,
+fpu_fmt_random_test, fpu_fmt_single_op_test, fpu_fmt_op_group_test,
+fpu_random_op_bp_test, fpu_op_group_bp_test (back-to-back),
+fpu_special_val_test (ZERO/INF/QNaN/SNaN operands)",Runs in the NONCOMP opgroup.
+"RISC-V Unpriv. ISA, F extension: Single-Precision Floating-Point Classify Instruction
+RISC-V Unpriv. ISA, D extension: Double-Precision Floating-Point Classify Instruction
+RISC-V Unpriv. ISA, Zfh chapter (CVA6 XF16 config): Half-Precision Floating-Point Classify Instruction
+IEEE 754-2008: 5.7.2 (class)",CG_CMP,FCLASS (.S/.D/.H),"rd = 10-bit one-hot class mask:
+bit 0 −INF, 1 −normal, 2 −subnormal, 3 −0, 4 +0, 5 +subnormal, 6 +normal, 7 +INF, 8 sNaN, 9 qNaN.
+Never sets fflags. An improperly NaN-boxed input is classified as canonical qNaN.","1. Every input class × fmt (30 bins).
+2. Each of the 10 one-hot result values (10 bins); any multi-bit result is an illegal bin.","fpu_sb compares every response against the C/MPFR ref model:
+- result_o bit-exact (incl. NaN-boxing of FP32/FP16 results)
+- fpu_exception_o.cause (fflags) bit-exact
+- each response matched to its request by trans_id; a response with no pending request is an error
+Pass = 0 UVM_ERROR / UVM_FATAL in the test log.
+One-hot property also enforced by cp_res_class illegal_bins (error on hit).",Functional Coverage (covergroup),"fpu_noncomput_cov::cg_classify
+- cx_fclass_x_fmt_x_rnd: cp_op_class × cp_fmt
+- cp_res_class (10 bins + illegal_bins multi_bit = default)","fpu_random_test, fpu_single_op_test, fpu_op_group_test,
+fpu_fmt_random_test, fpu_fmt_single_op_test, fpu_fmt_op_group_test,
+fpu_random_op_bp_test, fpu_op_group_bp_test (back-to-back),
+fpu_special_val_test (ZERO/INF/QNaN/SNaN operands)","'No flags' is checked by the scoreboard (fflags compare), not by a dedicated SVA."
+"RISC-V Unpriv. ISA, F extension: Single-Precision Floating-Point Conversion and Move Instructions (FMV.X.W)
+RISC-V Unpriv. ISA, D extension: Double-Precision ... Move Instructions (FMV.X.D)
+RISC-V Unpriv. ISA, Zfh chapter (CVA6 XF16 config): Half-Precision Conversion and Move Instructions (FMV.X.H)
+IEEE 754-2008: 5.5.1 (copy, non-computational)",CG_MV,FMV.X.W / FMV.X.D / FMV.X.H,"rd (integer) = raw bit pattern of rs1, sign-extended from the format width to XLEN.
+- No rounding, no flags.
+- NaN payloads (canonical or not, quiet or signaling) are copied unchanged.
+- Exempt from the NaN-boxing check: the low bits are moved even if rs1 is not properly boxed.","1. Every source class × fmt (30 bins).
+2. NaN kind × fmt: canonical qNaN, non-canonical qNaN, sNaN (9 bins).
+3. Properly / improperly boxed source × fmt (FP64 improperly boxed ignored: an FP64 value fills FLen) (5 bins).","fpu_sb compares every response against the C/MPFR ref model:
+- result_o bit-exact (incl. NaN-boxing of FP32/FP16 results)
+- fpu_exception_o.cause (fflags) bit-exact
+- each response matched to its request by trans_id; a response with no pending request is an error
+Pass = 0 UVM_ERROR / UVM_FATAL in the test log.",Functional Coverage (covergroup),"fpu_noncomput_cov::cg_move_f2x
+- cx_op_class_x_fmt
+- cx_nan_kind_x_fmt (fpu_common_pkg::nan_kind, box check off)
+- cx_boxed_x_fmt (ignore_bins fp64_always_boxed)
+fpu_wrap maps FMV_F2X to fpnew SGNJ with rm = 011 (raw passthrough).","fpu_random_test, fpu_single_op_test, fpu_op_group_test,
+fpu_fmt_random_test, fpu_fmt_single_op_test, fpu_fmt_op_group_test,
+fpu_random_op_bp_test, fpu_op_group_bp_test (back-to-back),
+fpu_special_val_test (ZERO/INF/QNaN/SNaN operands)","Bit-exact copy and sign extension checked by the scoreboard.
+Canonical qNaN operands come from fpu_txn QNAN + ALL_ZEROS mantissa config."
+"RISC-V Unpriv. ISA, F extension: Single-Precision Floating-Point Conversion and Move Instructions (FMV.W.X)
+RISC-V Unpriv. ISA, D extension: Double-Precision ... Move Instructions (FMV.D.X)
+RISC-V Unpriv. ISA, Zfh chapter (CVA6 XF16 config): Half-Precision Conversion and Move Instructions (FMV.H.X)
+RISC-V Unpriv. ISA, D extension: NaN Boxing of Narrower Values",CG_MV,FMV.W.X / FMV.D.X / FMV.H.X,"rd (FP) = low format-width bits of rs1 (integer), unchanged.
+- Bits above the format width are ignored.
+- FP32/FP16 results are NaN-boxed (upper FLen bits set to 1).
+- NaN payloads are not canonicalised; no flags.","1. Every value class × fmt (30 bins).
+2. NaN kind × fmt: canonical qNaN, non-canonical qNaN, sNaN (9 bins).
+3. Integer upper bits (above the format width) zero / all-ones / other × fmt, FP32 and FP16 only (6 bins).","fpu_sb compares every response against the C/MPFR ref model:
+- result_o bit-exact (incl. NaN-boxing of FP32/FP16 results)
+- fpu_exception_o.cause (fflags) bit-exact
+- each response matched to its request by trans_id; a response with no pending request is an error
+Pass = 0 UVM_ERROR / UVM_FATAL in the test log.",Functional Coverage (covergroup),"fpu_noncomput_cov::cg_move_x2f
+- cx_op_class_x_fmt
+- cx_nan_kind_x_fmt
+- cx_src_upper_x_fmt (cp_src_upper from x2f_src_upper(); FP64 ignore_bins: no upper bits at XLEN = 64)","fpu_random_test, fpu_single_op_test, fpu_op_group_test,
+fpu_fmt_random_test, fpu_fmt_single_op_test, fpu_fmt_op_group_test,
+fpu_random_op_bp_test, fpu_op_group_bp_test (back-to-back),
+fpu_special_val_test (ZERO/INF/QNaN/SNaN operands)","'Ignore upper bits' and result NaN-boxing checked by the scoreboard.
+Garbage upper bits come from fpu_txn::post_randomize, which randomises them for half of the unboxed FMV_X2F requests."
+"RISC-V Unpriv. ISA, F extension: Single-Precision Floating-Point Conversion and Move Instructions (FSGNJ*)
+RISC-V Unpriv. ISA, D extension: Double-Precision Floating-Point Conversion and Move Instructions (FSGNJ*)
+RISC-V Unpriv. ISA, Zfh chapter (CVA6 XF16 config): Half-Precision Floating-Point Conversion and Move Instructions (FSGNJ*)
+IEEE 754-2008: 5.5.1 (copySign, negate, abs)",CG_MV,FSGNJ / FSGNJN / FSGNJX (.S/.D/.H),"rd = rs1 magnitude with sign = rs2.sign / ~rs2.sign / rs1.sign ^ rs2.sign.
+- Non-arithmetic: no flags, NaN payloads (incl. sNaN) kept unchanged.
+- Pseudo-ops with rs1 = rs2: FMV (FSGNJ), FNEG (FSGNJN), FABS (FSGNJX).
+- An improperly boxed input is treated as canonical qNaN before injection.","1. 3 ops × rs1 class × rs2 sign × fmt (3 × 10 × 2 × 3 = 180 bins).
+2. FMV/FNEG/FABS pseudo-ops (rs1 = rs2) × fmt (9 bins).
+3. 3 ops × rs1 NaN kind (canonical qNaN, non-canonical qNaN, sNaN) (9 bins).","fpu_sb compares every response against the C/MPFR ref model:
+- result_o bit-exact (incl. NaN-boxing of FP32/FP16 results)
+- fpu_exception_o.cause (fflags) bit-exact
+- each response matched to its request by trans_id; a response with no pending request is an error
+Pass = 0 UVM_ERROR / UVM_FATAL in the test log.",Functional Coverage (covergroup),"fpu_noncomput_cov::cg_sign_injection
+- cx_fsgn_x_sign_x_fmt: cp_fsgn_op × cp_op_class × cp_op2_sign × cp_fmt
+- cx_pseudo_op: cp_fsgn_op × cp_same × cp_fmt
+- cx_fsgn_x_nan_kind: cp_fsgn_op × cp_nan_kind
+Op decoded from rm[1:0] (0 = FSGNJ, 1 = FSGNJN, 2 = FSGNJX; 3 ignored).","fpu_random_test, fpu_single_op_test, fpu_op_group_test,
+fpu_fmt_random_test, fpu_fmt_single_op_test, fpu_fmt_op_group_test,
+fpu_random_op_bp_test, fpu_op_group_bp_test (back-to-back),
+fpu_special_val_test (ZERO/INF/QNaN/SNaN operands)",Payload preservation checked by the scoreboard (bit-exact result compare).
+"RISC-V Unpriv. ISA, D extension: NaN Boxing of Narrower Values
+RISC-V Unpriv. ISA, Zfh chapter (CVA6 XF16 config): NaN boxing of half-precision values in FLen = 64",CG_BOX,NaN-boxing of FP32/FP16 operands,"With FLen = 64, a valid FP32/FP16 operand has all bits above its width set to 1.
+Any other upper-bit pattern makes the operand an implicit canonical qNaN for every operation that reads it as a float.
+Exempt: FMV.X.* / FMV.*.X (raw transfers) and integer sources (FCVT.*.W/L).","For each operand port the operation reads as a float, properly and improperly boxed × op × fmt:
+- operand_a: every op except FADD, FSUB, FCVT_I2F, FMV_X2F
+- operand_b: FADD, FSUB, FMUL, FDIV, FMA ×4, FCMP, FMIN_MAX, FSGNJ
+- imm (rs3 / FADD rs2): FADD, FSUB, FMA ×4
+FP64 × improperly boxed is ignored (FP64 fills FLen), except FCVT_F2F operand_a, whose source format comes from imm[1:0].","fpu_sb compares every response against the C/MPFR ref model:
+- result_o bit-exact (incl. NaN-boxing of FP32/FP16 results)
+- fpu_exception_o.cause (fflags) bit-exact
+- each response matched to its request by trans_id; a response with no pending request is an error
+Pass = 0 UVM_ERROR / UVM_FATAL in the test log.",Functional Coverage (covergroup),"fpu_agent_cov_model::cg_fpu_request
+- cx_box_a_x_op_x_fmt (ignore_bins not_fp, fp64)
+- cx_box_b_x_op_x_fmt (ignore_bins not_read, fp64)
+- cx_box_c_x_op_x_fmt (ignore_bins not_read, fp64)
+Boxing evaluated with fpu_common_pkg::operand_is_boxed against the source format.","fpu_random_test, fpu_single_op_test, fpu_op_group_test,
+fpu_fmt_random_test, fpu_fmt_single_op_test, fpu_fmt_op_group_test,
+fpu_random_op_bp_test, fpu_op_group_bp_test (back-to-back),
+fpu_special_val_test (ZERO/INF/QNaN/SNaN operands)","fpu_txn leaves 10 % of requests unboxed (m_nan_box_c); those operands have all-zero upper bits.
+Only FMV_X2F also gets random upper bits; other patterns are not separately binned.
+Canonical-NaN substitution checked by the scoreboard."

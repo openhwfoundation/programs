@@ -1,0 +1,7 @@
+,,,,,,,
+,Category,Item,Sign-off Criteria,Owner,Sign-off Date,Exceptions/Waivers,Evidence / Comments
+,Licensed Tools,Siemens Questa Sim-64 vsim 2025.3_2 (2025.11),,Ihsane Tahir,2026-11-24,,"Commercial licence. RTL and testbench simulation, code and functional coverage (vcover). Sign-off simulator."
+,,"GNU MPFR 4.2.2, GNU GMP 6.3.0",,Ihsane Tahir,2026-11-24,,Open source (LGPL-3.0-or-later; GMP also GPL-2.0-or-later). Linked into the C++ reference model of cvfpu-uvm only; not part of the RTL.
+,,GCC Toolchain / LLVM Toolchain,Provide open-source (not corporate) URL to Repository *and* tag,Ihsane Tahir,2026-11-25,Not Applicable,Block-level UVM verification; no software is compiled or run on the FPU (item from the CV32E40Pv2 Software Requirements tab).
+,,"Toolchain + Core Regression Testing, Benchmarks, Application Code",Published regression results,Ihsane Tahir,2026-11-25,Not Applicable,Block-level IP without a processor (items from the CV32E40Pv2 Software Requirements tab).
+,Licensed Design IP,None,,Ihsane Tahir,2026-11-24,,"All RTL is open source (see RTL_Design, 'No closed-source')."

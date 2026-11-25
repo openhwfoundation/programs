@@ -1,0 +1,2 @@
+var g_data = {"data":[{"n":"work.cvfpu_pipeline_sva","id":53,"zf":1,"tc":100.00,"d":100.00},{"n":"work.cvfpu_rsp_arb_sva","id":51,"zf":1,"tc":100.00,"d":100.00},{"n":"work.cvfpu_stage_occupancy_sva","id":33,"zf":1,"tc":100.00,"d":100.00},{"n":"work.cvfpu_sva","id":52,"zf":1,"tc":100.00,"a":100.00},{"n":"work.fpu_agent_pkg","id":19,"zf":1,"tc":100.00,"g":100.00},{"n":"work.lzc","id":31,"zf":1,"tc":100.00,"a":100.00},{"n":"work.rr_arb_tree","id":34,"zf":1,"tc":100.00,"a":100.00}]};
+processDuData(g_data);

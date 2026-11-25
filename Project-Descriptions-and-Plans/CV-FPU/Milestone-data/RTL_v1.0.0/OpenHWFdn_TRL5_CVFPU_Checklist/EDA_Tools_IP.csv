@@ -1,0 +1,10 @@
+,,,,,,
+,Category,Vendor,Product,Version,Usage,Comments
+,RTL Linter,Verilator (Veripool),Verilator,5.048,RTL lint (--lint-only -Wall),Reports/Lint/
+,RTL Formatter,,,,Not used,
+,Simulation,Siemens,Questa,Sim-64 vsim 2025.3_2 (2025.11),RTL and TB simulation,Sign-off simulator
+,Formal Verification,,,,Not used,
+,Verification Reporting,Siemens,Questa vcover,2025.3_2,"Code and functional coverage merge, waivers (exclude.do), reports",
+,EDA Verification IP,GNU,MPFR / GMP,4.2.2 / 6.3.0,Reference model arithmetic,Open source (LGPL)
+,Build,PULP platform,Bender,0.29.1,Dependency management and file lists,
+,EDA Design IP,Not Applicable: no EDA IP used in this project,,,,
