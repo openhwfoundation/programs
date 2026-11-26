@@ -1,0 +1,108 @@
+Requirement Location,Feature,Sub Feature,Feature Description,Verification Goal,Pass/Fail Criteria,Coverage Method,Implementation,Tests,Notes
+"RISC-V Unpriv. ISA, F extension: Single-Precision Floating-Point Conversion and Move Instructions (FCVT.W[U]/L[U].S)
+RISC-V Unpriv. ISA, D extension: Double-Precision ... (FCVT.W[U]/L[U].D)
+RISC-V Unpriv. ISA, Zfh chapter (CVA6 XF16 config): Half-Precision Conversion and Move Instructions (FCVT.W[U]/L[U].H)
+IEEE 754-2008: 5.4.1 (convertToInteger), 7.2 (invalid)",CG_CVT,F2I: FP32/FP64/FP16 → INT32/UINT32/INT64/UINT64,"rd = rs1 rounded to an integer per rm/frm.
+- Out of range, ±INF, NaN → NV, result saturates: positive overflow and NaN → max, negative overflow → min (0 for unsigned).
+- In range but not integral → NX.
+- Only NV or NX can ever be set.
+- On RV64, 32-bit results (W and WU) are sign-extended from bit 31.","1. Stimulus domain (16 bins): out-of-range positive / negative and in-range exact / inexact, for each of INT32, UINT32, INT64, UINT64.
+2. Stimulus domain × src fmt (48 bins).
+3. Every input class × src fmt (30 bins).
+4. Inexact and out-of-range domains × 4 rm × src fmt (exact domains ignored: rm-independent).
+5. INT32 result sign bit 0/1 × signed/unsigned (4 bins), for the sign extension of W and WU.
+6. int width (32/64) and signedness individually.","fpu_sb compares every response against the C/MPFR ref model:
+- result_o bit-exact (incl. NaN-boxing of FP32/FP16 results)
+- fpu_exception_o.cause (fflags) bit-exact
+- each response matched to its request by trans_id; a response with no pending request is an error
+Pass = 0 UVM_ERROR / UVM_FATAL in the test log.",Functional Coverage (covergroup),"fpu_conv_cov::cg_f2i
+- cp_stim (fpu_obs_txn::classify_f2i_stim, from flags and input sign), cp_stim_x_fmt
+- cx_class_x_fmt
+- cx_inexact_x_rnd (ignore_bins exact_rnd)
+- cx_w_sext: cp_w_res_sign (iff INT32) × cp_unsigned
+- cp_int_wide, cp_unsigned
+int width = imm[1], unsigned = imm[0].","fpu_conv_test (directed boundary stimulus, fpu_txn_conv)
+plus the random tests that pick conversions:
+fpu_random_test, fpu_single_op_test, fpu_op_group_test,
+fpu_fmt_random_test, fpu_fmt_single_op_test, fpu_fmt_op_group_test,
+fpu_random_op_bp_test, fpu_op_group_bp_test (back-to-back),
+fpu_special_val_test (ZERO/INF/QNaN/SNaN operands)","fpu_txn_conv F2I zones (MID / LOW_EDGE / HIGH_EDGE) place the exponent around 2^31 and 2^63 to reach the saturation boundaries.
+'Only NX/NV generated' checked by the scoreboard (fflags compare), no SVA.
+RMM excluded with ignore_bins in every rm coverpoint: the MPFR ref model cannot compute it (known limitation, see TESTS sheet)."
+"RISC-V Unpriv. ISA, F extension: Single-Precision Floating-Point Conversion and Move Instructions (FCVT.S.W[U]/L[U])
+RISC-V Unpriv. ISA, D extension: Double-Precision ... (FCVT.D.W[U]/L[U])
+RISC-V Unpriv. ISA, Zfh chapter (CVA6 XF16 config): Half-Precision Conversion and Move Instructions (FCVT.H.W[U]/L[U])
+IEEE 754-2008: 5.4.1 (convertFromInt), 7.4, 7.6",CG_CVT,I2F: INT32/UINT32/INT64/UINT64 → FP32/FP64/FP16,"rd = integer rs1 converted to FP, rounded per rm/frm.
+- 0 → +0.0, no flags.
+- INT_MIN converts exactly (power of two).
+- Too many significant bits → NX.
+- Only FP16 (max 65504) can overflow → OF+NX.
+- INT32 → FP64 is always exact.
+- Never UF, DZ or NV.","1. Stimulus kind (zero, INT32_MIN, INT64_MIN, rounds, other) × int width × dst fmt × signedness; INT_MIN bins only for the matching signed width; rounds ignored for INT32 → FP64.
+2. Rounding stimulus × 4 rm (8 bins) and × 4 rm × dst fmt (12 bins).
+3. Legal status set {none, NX, OF+NX} × dst fmt × int width (NX ignored for INT32 → FP64, OF ignored for FP32/FP64).","fpu_sb compares every response against the C/MPFR ref model:
+- result_o bit-exact (incl. NaN-boxing of FP32/FP16 results)
+- fpu_exception_o.cause (fflags) bit-exact
+- each response matched to its request by trans_id; a response with no pending request is an error
+Pass = 0 UVM_ERROR / UVM_FATAL in the test log.",Functional Coverage (covergroup),"fpu_conv_cov::cg_i2f
+- cx_stim_x_intw_x_fmt_x_unsign (ignore_bins ignore_int32_min, ignore_int64_min, ignore_rounds)
+- cx_rounds_x_rnd (ignore_bins zero_rnd), cx_rounds_x_rnd_x_fmt
+- cp_status {no_flags, nx_only, of_nx}
+- cx_status_x_fmt_x_intw (ignore_bins nx_ignore, of_ignore)
+Integer source on operand_a; int width = imm[1], unsigned = imm[0].","fpu_conv_test (directed boundary stimulus, fpu_txn_conv)
+plus the random tests that pick conversions:
+fpu_random_test, fpu_single_op_test, fpu_op_group_test,
+fpu_fmt_random_test, fpu_fmt_single_op_test, fpu_fmt_op_group_test,
+fpu_random_op_bp_test, fpu_op_group_bp_test (back-to-back),
+fpu_special_val_test (ZERO/INF/QNaN/SNaN operands)","No directed 'rd, x0' test: register x0 is not visible at the FPU boundary; zero input is covered by I2F_STIM_ZERO.
+INT32 → FP64 no-flag property checked by the scoreboard, no SVA.
+RMM excluded with ignore_bins in every rm coverpoint: the MPFR ref model cannot compute it (known limitation, see TESTS sheet)."
+"RISC-V Unpriv. ISA, D extension: Double-Precision ... Conversion (FCVT.D.S)
+RISC-V Unpriv. ISA, Zfh chapter (CVA6 XF16 config): Half-Precision Conversion and Move Instructions (FCVT.S.H, FCVT.D.H)
+IEEE 754-2008: 5.4.2 (convertFormat), 6.2 (NaN)",CG_CVT,"F2F widening: S→D, H→S, H→D","rd = rs1 in the wider format.
+- Always exact: no NX/UF/OF; subnormal sources become normal.
+- sNaN → canonical qNaN, NV; qNaN → canonical qNaN, no flag.
+- Source format from imm[1:0], destination from fmt.","1. Each widening pair × every input class (3 × 10 = 30 bins).
+2. Each pair × flags {none, NV only} (6 bins).
+3. src × dst format pairs (same-format ignored).","fpu_sb compares every response against the C/MPFR ref model:
+- result_o bit-exact (incl. NaN-boxing of FP32/FP16 results)
+- fpu_exception_o.cause (fflags) bit-exact
+- each response matched to its request by trans_id; a response with no pending request is an error
+Pass = 0 UVM_ERROR / UVM_FATAL in the test log.",Functional Coverage (covergroup),"fpu_conv_cov::cg_f2f_widen
+- cx_pair_x_class: cp_pair {h2s, h2d, s2d} × cp_op_fclass
+- cx_pair_x_flags: cp_pair × cp_flags {no_flags, nv_only}
+- cx_src_x_dst (ignore_bins same_fmt; FP64 source and FP16 destination ignored)","fpu_conv_test (directed boundary stimulus, fpu_txn_conv)
+plus the random tests that pick conversions:
+fpu_random_test, fpu_single_op_test, fpu_op_group_test,
+fpu_fmt_random_test, fpu_fmt_single_op_test, fpu_fmt_op_group_test,
+fpu_random_op_bp_test, fpu_op_group_bp_test (back-to-back),
+fpu_special_val_test (ZERO/INF/QNaN/SNaN operands)","Stimulus: fpu_txn_conv F2F_WIDEN and F2F_NAN_INF classes.
+'No flag except NV' checked by the scoreboard, no SVA."
+"RISC-V Unpriv. ISA, D extension: Double-Precision ... Conversion (FCVT.S.D)
+RISC-V Unpriv. ISA, Zfh chapter (CVA6 XF16 config): Half-Precision Conversion and Move Instructions (FCVT.H.S, FCVT.H.D)
+IEEE 754-2008: 5.4.2 (convertFormat), 7.4, 7.5, 7.6",CG_CVT,"F2F narrowing: D→S, D→H, S→H","rd = rs1 rounded to the narrower format per rm/frm.
+- Above dst max → ±INF or ±max-finite depending on rm, OF+NX.
+- Below dst min-normal and inexact → subnormal/zero, UF+NX.
+- Below dst min-subnormal → ±0 or ±min-subnormal depending on rm.
+- sNaN → canonical qNaN, NV.","1. Each narrowing pair × every input class (30 bins).
+2. Each pair × every reachable result class (27 bins).
+3. Each pair × fflags {none, NX, UF, OF, NV} (15 bins).
+4. Each pair × {OF, UF} × 4 rm (24 bins): where rm changes the result.
+5. Input class × 4 rm (40 bins).","fpu_sb compares every response against the C/MPFR ref model:
+- result_o bit-exact (incl. NaN-boxing of FP32/FP16 results)
+- fpu_exception_o.cause (fflags) bit-exact
+- each response matched to its request by trans_id; a response with no pending request is an error
+Pass = 0 UVM_ERROR / UVM_FATAL in the test log.",Functional Coverage (covergroup),"fpu_conv_cov::cg_f2f_narrow
+- cx_pair_x_class: cp_pair {s2h, d2h, d2s} × cp_op_fclass
+- cx_pair_x_res_class
+- cx_pair_x_exception
+- cx_pair_x_of_uf_x_rnd
+- cx_zone_x_rnd: cp_op_fclass × cp_rnd_mode
+- cx_src_x_dst (ignore_bins same_fmt)","fpu_conv_test (directed boundary stimulus, fpu_txn_conv)
+plus the random tests that pick conversions:
+fpu_random_test, fpu_single_op_test, fpu_op_group_test,
+fpu_fmt_random_test, fpu_fmt_single_op_test, fpu_fmt_op_group_test,
+fpu_random_op_bp_test, fpu_op_group_bp_test (back-to-back),
+fpu_special_val_test (ZERO/INF/QNaN/SNaN operands)","Stimulus: fpu_txn_conv places the source exponent relative to the destination range:
+F2F_BELLOW_SUBNORM, F2F_LOW_SUBNORM_UF, F2F_SUBNORM_NORM, F2F_LOW_NORMAL, F2F_NARROW_NORMAL, F2F_HIGH_NORMAL, F2F_NARROW_OF, F2F_NAN_INF.
+RMM excluded with ignore_bins in every rm coverpoint: the MPFR ref model cannot compute it (known limitation, see TESTS sheet)."

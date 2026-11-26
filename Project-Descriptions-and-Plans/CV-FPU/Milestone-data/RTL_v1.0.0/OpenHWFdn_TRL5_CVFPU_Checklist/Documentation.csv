@@ -1,0 +1,26 @@
+,,,,,,,
+,Category,Item,Sign-off Criteria,Owner,Sign-off Date,Exceptions/Waivers,Evidence / Comments
+,Publication,User Manual,Tagged version of source available in core-v-docs,Ihsane Tahir,2026-11-25,Not Applicable,"The CV-FPU user manual is fpnew docs/ in openhwgroup/cvfpu, tag v1.0.0, not core-v-docs."
+,,,Formally released static version attributed to core-v-docs tag,Ihsane Tahir,2026-11-25,Not Applicable,"Static version: fpnew docs/ at tag v1.0.0 (https://github.com/openhwgroup/cvfpu/tree/v1.0.0/docs), not core-v-docs."
+,,,No open or non-waived issues assigned to tagged release,Ihsane Tahir,2026-11-25,"#181 (Documentation, DoesNotGate_v1.0.0)","The only open Documentation issue is #181, waived. See CVFPU_Design_Issue_Summary.xlsx."
+,,Errata,List of waived core-v-docs issues related to tagged release,Ihsane Tahir,2026-11-25,Not Applicable,CV-FPU documentation is not in core-v-docs.
+,User Manual Content,CORE Integration,Chapter reviewed and signed-off as a complete.,Ihsane Tahir,2026-11-26,,"Integration content of the FPU: docs/README.md 'Top-Level Interface' (parameters, ports, data types, NaN-boxing, handshake interface, operation tags, status-flag mask)."
+,,,Completed RISC-V ISA Compliance Review,Ihsane Tahir,2026-11-25,Not Applicable,"CV-FPU is a functional unit IP, not a core."
+,,Micro-architecture of each major design unit,Chapter(s) reviewed and signed-off as a complete.,Ihsane Tahir,2026-11-25,Not Applicable,
+,,,Completed RISC-V ISA Compliance Review,Ihsane Tahir,2026-11-25,Not Applicable,"CV-FPU is a functional unit IP, not a core."
+,,ISA of CORE-specific instruction extensions,Chapter reviewed and signed-off as a complete.,Ihsane Tahir,2026-11-25,Not Applicable,"CV-FPU is a functional unit IP, not a core."
+,,,Completed RISC-V ISA Compliance Review,Ihsane Tahir,2026-11-25,Not Applicable,"CV-FPU is a functional unit IP, not a core."
+,,Control and Status Registers,Chapter reviewed and signed-off as a complete.,Ihsane Tahir,2026-11-25,Not Applicable,"CV-FPU is a functional unit IP, not a core. The FPU has no CSRs: the rounding mode is an input and the flags (status_t) an output; fcsr is in the core."
+,,,Completed RISC-V ISA Compliance Review,Ihsane Tahir,2026-11-25,Not Applicable,"CV-FPU is a functional unit IP, not a core."
+,,Performance Counters,Chapter reviewed and signed-off as a complete.,Ihsane Tahir,2026-11-25,Not Applicable,"CV-FPU is a functional unit IP, not a core. The FPU has no performance counters."
+,,,Completed RISC-V ISA Compliance Review,Ihsane Tahir,2026-11-25,Not Applicable,"CV-FPU is a functional unit IP, not a core."
+,,Exceptions and Interrupts,Chapter reviewed and signed-off as a complete.,Ihsane Tahir,2026-11-25,Not Applicable,"CV-FPU is a functional unit IP, not a core. The FPU raises no traps or interrupts; IEEE 754 exceptions are reported as status flags (docs/README.md 'status_t')."
+,,,Completed RISC-V ISA Compliance Review,Ihsane Tahir,2026-11-25,Not Applicable,"CV-FPU is a functional unit IP, not a core."
+,,Debug support,Chapter reviewed and signed-off as a complete.,Ihsane Tahir,2026-11-25,Not Applicable,"CV-FPU is a functional unit IP, not a core."
+,,,Completed RISC-V ISA Compliance Review,Ihsane Tahir,2026-11-25,Not Applicable,"CV-FPU is a functional unit IP, not a core."
+,,Trigger support,Chapter reviewed and signed-off as a complete.,Ihsane Tahir,2026-11-25,Not Applicable,"CV-FPU is a functional unit IP, not a core."
+,,,Completed RISC-V ISA Compliance Review,Ihsane Tahir,2026-11-25,Not Applicable,"CV-FPU is a functional unit IP, not a core."
+,,Tracer support,Chapter reviewed and signed-off as a complete.,Ihsane Tahir,2026-11-25,Not Applicable,"CV-FPU is a functional unit IP, not a core."
+,,,Completed RISC-V ISA Compliance Review,Ihsane Tahir,2026-11-25,Not Applicable,"CV-FPU is a functional unit IP, not a core."
+,,Synthesis guidelines,Chapter reviewed and signed-off as a complete.,Ihsane Tahir,2026-11-26,,fpnew docs have no synthesis-guidelines chapter. docs/README.md 'Pipelining' and 'PipeConfig' describe register placement.
+,,,Completed RISC-V ISA Compliance Review,Ihsane Tahir,2026-11-25,Not Applicable,"CV-FPU is a functional unit IP, not a core."

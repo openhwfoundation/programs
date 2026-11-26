@@ -1,0 +1,146 @@
+Feature,Sub Feature,Description,Implementation,Pass/Fail Criteria,Coverage Method,Notes
+Tests,Single operation,"One operation picked at random for the whole test; fmt, rm, operands and delays random per request.
+Common to all tests (base_test):
+- flush on the fly in 50 % of seeds (one pulse after 30k-65k cycles)
+- reset on the fly in 30 % of seeds (5-10 resets, first after 1/4-1/2 of the requests)
+- inter-request delay: 0 (50 %), 1-10, 11-25, 26-31, 40-100 cycles
+- operand class weights: normal 50, subnormal 30, zero/INF/qNaN/sNaN 5 each
+- mantissa patterns: all-zeros, all-ones, walking-one, walking-zero, random
+- 90 % properly NaN-boxed operands",fpu_single_op_test (fpu_single_op_seq),"0 UVM_ERROR / UVM_FATAL in the test log:
+- every response matches the ref model (fpu_sb)
+- no cvfpu_sva X-check failure",Functional Coverage; Assertion check,
+Tests,Single operation group,"One opgroup picked for the whole test; operation random within it:
+- ADDMUL: FADD, FSUB, FMUL, FMADD, FMSUB, FNMADD, FNMSUB
+- DIVSQRT: FDIV, FSQRT
+- NONCOMP: FCMP, FMIN_MAX, FSGNJ, FCLASS
+- CONV: FCVT_I2F, FCVT_F2F, FCVT_F2I, FMV_X2F, FMV_F2X
+Common to all tests (base_test):
+- flush on the fly in 50 % of seeds (one pulse after 30k-65k cycles)
+- reset on the fly in 30 % of seeds (5-10 resets, first after 1/4-1/2 of the requests)
+- inter-request delay: 0 (50 %), 1-10, 11-25, 26-31, 40-100 cycles
+- operand class weights: normal 50, subnormal 30, zero/INF/qNaN/sNaN 5 each
+- mantissa patterns: all-zeros, all-ones, walking-one, walking-zero, random
+- 90 % properly NaN-boxed operands",fpu_op_group_test (fpu_op_group_seq),"0 UVM_ERROR / UVM_FATAL in the test log:
+- every response matches the ref model (fpu_sb)
+- no cvfpu_sva X-check failure",Functional Coverage; Assertion check,
+Tests,Fully random,"Every request field random (operation, fmt, rm, frm, operands, trans_id, delay).
+Common to all tests (base_test):
+- flush on the fly in 50 % of seeds (one pulse after 30k-65k cycles)
+- reset on the fly in 30 % of seeds (5-10 resets, first after 1/4-1/2 of the requests)
+- inter-request delay: 0 (50 %), 1-10, 11-25, 26-31, 40-100 cycles
+- operand class weights: normal 50, subnormal 30, zero/INF/qNaN/sNaN 5 each
+- mantissa patterns: all-zeros, all-ones, walking-one, walking-zero, random
+- 90 % properly NaN-boxed operands",fpu_random_test (fpu_random_op_seq),"0 UVM_ERROR / UVM_FATAL in the test log:
+- every response matches the ref model (fpu_sb)
+- no cvfpu_sva X-check failure",Functional Coverage; Assertion check,
+Tests,"Single format, single operation","One fmt and one operation for the whole test.
+Common to all tests (base_test):
+- flush on the fly in 50 % of seeds (one pulse after 30k-65k cycles)
+- reset on the fly in 30 % of seeds (5-10 resets, first after 1/4-1/2 of the requests)
+- inter-request delay: 0 (50 %), 1-10, 11-25, 26-31, 40-100 cycles
+- operand class weights: normal 50, subnormal 30, zero/INF/qNaN/sNaN 5 each
+- mantissa patterns: all-zeros, all-ones, walking-one, walking-zero, random
+- 90 % properly NaN-boxed operands",fpu_fmt_single_op_test (fpu_fmt_single_op_seq),"0 UVM_ERROR / UVM_FATAL in the test log:
+- every response matches the ref model (fpu_sb)
+- no cvfpu_sva X-check failure",Functional Coverage; Assertion check,
+Tests,"Single format, single operation group","One fmt and one opgroup for the whole test; operation random within the opgroup.
+Common to all tests (base_test):
+- flush on the fly in 50 % of seeds (one pulse after 30k-65k cycles)
+- reset on the fly in 30 % of seeds (5-10 resets, first after 1/4-1/2 of the requests)
+- inter-request delay: 0 (50 %), 1-10, 11-25, 26-31, 40-100 cycles
+- operand class weights: normal 50, subnormal 30, zero/INF/qNaN/sNaN 5 each
+- mantissa patterns: all-zeros, all-ones, walking-one, walking-zero, random
+- 90 % properly NaN-boxed operands",fpu_fmt_op_group_test (fpu_fmt_op_group_seq),"0 UVM_ERROR / UVM_FATAL in the test log:
+- every response matches the ref model (fpu_sb)
+- no cvfpu_sva X-check failure",Functional Coverage; Assertion check,
+Tests,"Single format, random","One fmt for the whole test; all other fields random.
+Common to all tests (base_test):
+- flush on the fly in 50 % of seeds (one pulse after 30k-65k cycles)
+- reset on the fly in 30 % of seeds (5-10 resets, first after 1/4-1/2 of the requests)
+- inter-request delay: 0 (50 %), 1-10, 11-25, 26-31, 40-100 cycles
+- operand class weights: normal 50, subnormal 30, zero/INF/qNaN/sNaN 5 each
+- mantissa patterns: all-zeros, all-ones, walking-one, walking-zero, random
+- 90 % properly NaN-boxed operands",fpu_fmt_random_test (fpu_fmt_random_op_seq),"0 UVM_ERROR / UVM_FATAL in the test log:
+- every response matches the ref model (fpu_sb)
+- no cvfpu_sva X-check failure",Functional Coverage; Assertion check,
+Tests,Conversion directed/weighted,"FCVT_F2I / FCVT_I2F / FCVT_F2F only, using fpu_txn_conv:
+- F2F: source exponent placed below / at / inside / above the destination subnormal, normal and overflow ranges, plus widening and NaN/INF
+- F2I: exponent placed mid-range, near 2^31 and near 2^63 (saturation edges)
+- ~45 % unconstrained conversions (CONV_RANDOM weight 50 of 110)
+Common to all tests (base_test):
+- flush on the fly in 50 % of seeds (one pulse after 30k-65k cycles)
+- reset on the fly in 30 % of seeds (5-10 resets, first after 1/4-1/2 of the requests)
+- inter-request delay: 0 (50 %), 1-10, 11-25, 26-31, 40-100 cycles
+- operand class weights: normal 50, subnormal 30, zero/INF/qNaN/sNaN 5 each
+- mantissa patterns: all-zeros, all-ones, walking-one, walking-zero, random
+- 90 % properly NaN-boxed operands",fpu_conv_test (fpu_conv_seq),"0 UVM_ERROR / UVM_FATAL in the test log:
+- every response matches the ref model (fpu_sb)
+- no cvfpu_sva X-check failure",Functional Coverage; Assertion check,
+Tests,Special values,"Every operand restricted to ZERO, INF, QNAN or SNAN (25 % each), all operations.
+Targets invalid-operation, NaN propagation and signed-zero cases.
+Common to all tests (base_test):
+- flush on the fly in 50 % of seeds (one pulse after 30k-65k cycles)
+- reset on the fly in 30 % of seeds (5-10 resets, first after 1/4-1/2 of the requests)
+- inter-request delay: 0 (50 %), 1-10, 11-25, 26-31, 40-100 cycles
+- operand class weights: normal 50, subnormal 30, zero/INF/qNaN/sNaN 5 each
+- mantissa patterns: all-zeros, all-ones, walking-one, walking-zero, random
+- 90 % properly NaN-boxed operands",fpu_special_val_test (fpu_special_val_seq),"0 UVM_ERROR / UVM_FATAL in the test log:
+- every response matches the ref model (fpu_sb)
+- no cvfpu_sva X-check failure",Functional Coverage; Assertion check,
+Tests,"Fully random, back-to-back","Fully random, inter-request delay forced to 0 so that fpu_ready_o stalls (DIVSQRT busy, output arbitration).
+Common to all tests (base_test):
+- flush on the fly in 50 % of seeds (one pulse after 30k-65k cycles)
+- reset on the fly in 30 % of seeds (5-10 resets, first after 1/4-1/2 of the requests)
+- inter-request delay: 0 (50 %), 1-10, 11-25, 26-31, 40-100 cycles
+- operand class weights: normal 50, subnormal 30, zero/INF/qNaN/sNaN 5 each
+- mantissa patterns: all-zeros, all-ones, walking-one, walking-zero, random
+- 90 % properly NaN-boxed operands",fpu_random_op_bp_test (fpu_random_op_bp_seq),"0 UVM_ERROR / UVM_FATAL in the test log:
+- every response matches the ref model (fpu_sb)
+- no cvfpu_sva X-check failure",Functional Coverage; Assertion check,
+Tests,"Single operation group, back-to-back","One opgroup, delay 0: fills that opgroup's pipeline and exercises backpressure per opgroup.
+Common to all tests (base_test):
+- flush on the fly in 50 % of seeds (one pulse after 30k-65k cycles)
+- reset on the fly in 30 % of seeds (5-10 resets, first after 1/4-1/2 of the requests)
+- inter-request delay: 0 (50 %), 1-10, 11-25, 26-31, 40-100 cycles
+- operand class weights: normal 50, subnormal 30, zero/INF/qNaN/sNaN 5 each
+- mantissa patterns: all-zeros, all-ones, walking-one, walking-zero, random
+- 90 % properly NaN-boxed operands",fpu_op_group_bp_test (fpu_op_group_bp_seq),"0 UVM_ERROR / UVM_FATAL in the test log:
+- every response matches the ref model (fpu_sb)
+- no cvfpu_sva X-check failure",Functional Coverage; Assertion check,
+Tests,Pipeline stress,"Fully random, delay 0, with forced events:
+- flush every 11 cycles, 50 pulses (11 is not a multiple of any 1-3 cycle pipeline depth, so flush lands on every stage)
+- reset on the fly forced on, 5-10 resets",fpu_pipeline_stress_test (fpu_random_op_bp_seq),"0 UVM_ERROR / UVM_FATAL in the test log:
+- every response matches the ref model (fpu_sb)
+- no cvfpu_sva X-check failure",Functional Coverage; Assertion check,"Closes the stage-occupancy saturation and flush-vs-stage covers."
+Request coverage,flush_i,flush_i asserted at least once.,fpu_agent_cov_model::cg_fpu_flush.cp_flush {flush_detected},All bins hit,Functional Coverage (covergroup),N/A
+Request coverage,fu_data_i.operation,"All 18 fpnew operations requested: FADD, FSUB, FMUL, FDIV, FSQRT, FMADD, FMSUB, FNMSUB, FNMADD, FCMP, FMIN_MAX, FSGNJ, FCVT_F2F, FCVT_F2I, FCVT_I2F, FMV_F2X, FMV_X2F, FCLASS.
+Each operation in each fmt (54 bins).","fpu_agent_cov_model::cg_fpu_request: cp_operation, cp_op_x_fmt",All bins hit,Functional Coverage (covergroup),N/A
+Request coverage,operand_a / operand_b / imm,"Each operand port: class (zero, subnormal, normal, INF, qNaN, sNaN) × sign (12 bins per port).","cg_fpu_request: cp_opA_x_sign, cp_opB_x_sign, cp_opC_x_sign",All bins hit,Functional Coverage (covergroup),"Class is evaluated in the source format (imm[1:0] for FCVT_F2F).
+Per-bit toggling is left to code toggle coverage of fu_data_i."
+Request coverage,fu_data_i.trans_id,Every trans_id value 0 .. 2^TRANS_ID_BITS − 1 used.,cg_fpu_request.cp_trans_id (bins id[]),All bins hit,Functional Coverage (covergroup),N/A
+Request coverage,fpu_fmt_i,"FP32, FP64 and FP16 requested (FP8/FP16ALT ignored: disabled in the cv64a60ax configuration).",cg_fpu_request.cp_fmt; cp_fmt / cp_src_fmt / cp_dst_fmt in every operation covergroup,All bins hit,Functional Coverage (covergroup),N/A
+Request coverage,NaN-boxing validity,"Properly / improperly boxed × operation × fmt for each operand port the operation reads as a float. See COMP_MOVE sheet, CG_BOX.","cg_fpu_request: cx_box_a_x_op_x_fmt, cx_box_b_x_op_x_fmt, cx_box_c_x_op_x_fmt",All bins hit,Functional Coverage (covergroup),N/A
+Request coverage,fpu_rm_i,"Static rounding modes RNE, RTZ, RDN, RUP and DYN each requested.",cg_fpu_request.cp_rm,All bins hit,Functional Coverage (covergroup),"RMM excluded with ignore_bins in every rm coverpoint: the MPFR ref model cannot compute it (known limitation, see TESTS sheet)."
+Request coverage,fpu_frm_i (rm = DYN),"Under rm = DYN, fcsr.frm = RNE, RTZ, RDN, RUP each used (frm is ignored when rm is static, so only the DYN row is crossed).","cg_fpu_request: cp_frm, cx_dyn_x_frm (ignore_bins non_dyn)",All bins hit,Functional Coverage (covergroup),"RMM excluded with ignore_bins in every rm coverpoint: the MPFR ref model cannot compute it (known limitation, see TESTS sheet)."
+Request coverage,fpu_prec_i,Unused while XFVec = 0 (no vector precision control).,cvfpu_sva.fpu_prec_i_assert (X-check only),No assertion failure,Assertion,No functional coverage: the input has no effect on this build.
+Response coverage,fpu_trans_id_o,Every trans_id value returned.,fpu_agent_cov_model::cg_fpu_response.cp_trans_id (bins id[]),All bins hit,Functional Coverage (covergroup),N/A
+Response coverage,fpu_exception_o.cause,"No exception and each fflag (NX, UF, OF, DZ, NV) returned at least once across all operations.",cg_fpu_response.cp_fp_exception,All bins hit,Functional Coverage (covergroup),Per-operation flag coverage is in each operation covergroup.
+Interface checks,Request X-checks,"No X/Z on fpu_valid_i, fpu_ready_o, flush_i at any time out of reset.
+No X/Z on fu_data_i, fpu_fmt_i, fpu_rm_i, fpu_frm_i, fpu_prec_i while fpu_valid_i is high.","cvfpu_sva: fpu_valid_i_assert, fpu_ready_o_assert, flush_i_assert, fu_data_i_assert, fpu_fmt_i_assert, fpu_rm_i_assert, fpu_frm_i_assert, fpu_prec_i_assert",No assertion failure,Assertion,Bound to fpu_wrap in tb_top.sv; active in every test.
+Interface checks,Response X-checks,"No X/Z on fpu_valid_o, fpu_early_valid_o at any time out of reset.
+No X/Z on fpu_trans_id_o, result_o, fpu_exception_o while fpu_valid_o is high.","cvfpu_sva: fpu_valid_o_assert, fpu_early_valid_o_assert, fpu_trans_id_o_assert, result_o_assert, fpu_exception_o_assert",No assertion failure,Assertion,Bound to fpu_wrap in tb_top.sv; active in every test.
+Response arbitration,Output arbiter (4 opgroups),"fpnew's round-robin output arbiter (rr_arb_tree) over ADDMUL, DIVSQRT, NONCOMP, CONV:
+- each opgroup granted at least once
+- each opgroup requesting alone, and granted
+- all 16 request masks seen
+- all 4 requesting at once, and each of them granted in that situation","cvfpu_rsp_arb_sva bound to i_fpnew_bulk.i_arbiter: c_grant_seen, c_singleton_request_seen, c_singleton_request_granted, c_req_mask_seen, c_all_requesting_seen, c_all_requesting_grant_i",All cover properties hit,Cover property,"Covers only, no grant-correctness assertion. A wrongly routed result is caught by the scoreboard as a result/trans_id mismatch."
+Pipeline,Saturation,Every pipeline register of a datapath instance holds a valid operation in the same cycle.,"cvfpu_stage_occupancy_sva.c_stage_saturation, 8 bound instances:
+stage_occ_addmul_fp32_sva, stage_occ_addmul_fp64_sva, stage_occ_addmul_fp16_sva, stage_occ_noncomp_fp32_sva, stage_occ_noncomp_fp64_sva, stage_occ_noncomp_fp16_sva, stage_occ_conv_sva, stage_occ_divsqrt_sva",All cover properties hit,Cover property,Hit by fpu_pipeline_stress_test and the back-to-back tests.
+Pipeline,Flush vs. stage,"flush_i asserted while each individual pipeline register (input, middle, output) holds a valid operation.",cvfpu_stage_occupancy_sva.c_flush_vs_stage (gen_flush_inp/mid/out; 13 covers across the 8 instances),All cover properties hit,Cover property,Hit by fpu_pipeline_stress_test.
+Pipeline,Backpressure duration,"fpu_ready_o low while fpu_valid_i is held, for exactly 1, exactly 2 and ≥ 3 cycles, per opgroup of the stalled request.","cvfpu_pipeline_sva.gen_bp_opgroup[0..3] (ADDMUL, DIVSQRT, NONCOMP, CONV):
+c_backpressure_1, c_backpressure_2, c_backpressure_3plus (12 covers)",All cover properties hit,Cover property,All 12 hit in the full fpu_reg_list regression.
+Out of scope,FP8 / FP16ALT,"XF8 = 0, XF16ALT = 0 in the cv64a60ax configuration: formats not instantiated.",N/A,N/A,N/A,N/A
+Out of scope,Vector / SIMD,"XFVec = 0: scalar-only build, no packed-SIMD operations or fpu_prec_i control.",N/A,N/A,N/A,N/A
+Out of scope,INT8 / INT16 conversions,Masked off by XFVec = 0 (fpu_wrap IntFmtMask).,N/A,N/A,N/A,N/A
+Out of scope,ROD rounding mode,fpnew-only mode with no RISC-V rm/frm encoding.,N/A,N/A,N/A,N/A
+Known limitation,RMM (rm = 100 / frm = 100),Legal RISC-V rounding mode but not self-checkable: the MPFR ref model backend has no round-to-nearest-ties-to-away.,ignore_bins rmm in every rounding-mode coverpoint,N/A,N/A,"Tracked as a verification gap, not a design waiver."

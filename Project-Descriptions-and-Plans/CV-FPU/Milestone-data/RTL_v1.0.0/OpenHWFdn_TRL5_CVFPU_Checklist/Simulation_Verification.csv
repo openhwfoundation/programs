@@ -1,0 +1,16 @@
+,,,,,,,
+,Category,Item,Sign-off Criteria,Owner,Sign-off Date,Exceptions/Waivers,Evidence / Comments
+,Verification Planning,Top-level Verification Plan,Top-level plan is complete,Ihsane Tahir,2026-11-24,,"Testplan/cvfpu_uvm_testplan.xlsx: 48 items in four tabs (ARITH, COMP_MOVE, CONV, TESTS), including explicit out-of-scope items (FP8/FP16ALT, SIMD, INT8/INT16, ROD) and the RMM known limitation."
+,,Per-functional Category Verification Plan,"Completed, reviewed and up-issued per review",Ihsane Tahir,2026-11-24,,"Testplan/: one tab per functional category (ARITH, COMP_MOVE, CONV, TESTS)."
+,,Testbench Cross-reference,Each item in Vplan cross-ref’ed to testcase and/or coverage,Ihsane Tahir,2026-11-24,,"Every testplan item names its test, covergroup, assertion or cover property (columns Implementation and Coverage Method); out-of-scope items are marked N/A."
+,Code Coverage,Block/Statement Coverage,All Blocks covered,Ihsane Tahir,2026-11-26,"Waivers for fixed parameters and structurally unreachable code: Waivers/exclude.do (110 statements). RMM (exclude.do category 1.1) is a legal feature that is not verified, see Waivers/README.md.","/top/dut statement coverage 97.96% pre-waiver, 100.00% post-waiver (5294/5294). Branch 100.00% (3170/3170) and FSM states/transitions 100.00% post-waiver."
+,,100% Conditional Coverage,All conditions covered,Ihsane Tahir,2026-11-26,"Waivers: Waivers/exclude.do (41 condition FEC rows, 487 expression FEC rows), proofs in Waivers/details/.","/top/dut condition coverage 79.64% pre-waiver, 100.00% post-waiver (160/160). Expression coverage (Questa FEC) 83.17% pre-waiver, 100.00% post-waiver (2111/2111)."
+,Functional Coverage,All cover-points attributed to a Vplan item,Human review,Ihsane Tahir,2026-11-26,,The testplan names the covergroup of each item (17 covergroups).
+,,All cover properties attributed to a Vplan item,Human review,Ihsane Tahir,2026-11-26,,"The testplan names the SVA cover properties (cvfpu_pipeline_sva, cvfpu_stage_occupancy_sva, cvfpu_rsp_arb_sva). Assertions (cvfpu_sva) are listed as checkers."
+,,Cover-point coverage,100%,Ihsane Tahir,2026-11-24,,Covergroup bins 8480/8480 = 100.00%.
+,,Cover-property coverage,100%,Ihsane Tahir,2026-11-25,,"Cover directives 66/66 = 100.00%, including the 12 back-pressure covers."
+,Regression,Compliance Test Suite,All RISC-V Compliance tests run and passing,Ihsane Tahir,2026-11-25,Not Applicable,No FPU-level RISC-V compliance suite exists for a standalone FPU IP verified at block level.
+,,IP-specific Test Suite,All tests run and passing,Ihsane Tahir,2026-11-24,,"simu/fpu_reg_list: 11 tests, 186 runs, 186 pass, 0 fail (Reports/Simulation). 0 assertion failures (67 assertions); an assertion failure fails the test."
+,Final Report,Verification Plans,,Ihsane Tahir,2026-11-24,,Testplan/
+,,Regression Results,,Ihsane Tahir,2026-11-24,,Reports/Simulation/README.md and regression_results.csv
+,,Coverage Results,,Ihsane Tahir,2026-11-26,,"Summary in README.md of this release; Questa HTML reports in Reports/Coverage/ (code_cov/, funct_cov/)."

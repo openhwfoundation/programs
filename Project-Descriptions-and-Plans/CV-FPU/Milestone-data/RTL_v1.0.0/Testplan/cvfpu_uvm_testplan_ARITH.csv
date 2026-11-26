@@ -1,0 +1,128 @@
+Requirement Location,Feature,Sub Feature,Feature Description,Verification Goal,Pass/Fail Criteria,Coverage Method,Implementation,Tests,Notes
+"RISC-V Unpriv. ISA, F extension: Single-Precision Floating-Point Computational Instructions
+RISC-V Unpriv. ISA, D extension: Double-Precision Floating-Point Computational Instructions
+RISC-V Unpriv. ISA, Zfh chapter (CVA6 XF16 config): Half-Precision Floating-Point Computational Instructions
+IEEE 754-2008: 5.4.1 (addition/subtraction), 6.3 (sign of zero), 7.2 (invalid), 7.4 (overflow), 7.6 (inexact)",CG_ARITH,FADD / FSUB (.S/.D/.H),"rd = rs1 + rs2 / rs1 − rs2, rounded once per rm/frm.
+- ∞ − ∞ (or ∞ + (−∞)) → canonical qNaN, NV.
+- Any sNaN operand → canonical qNaN, NV; qNaN operand → canonical qNaN, no flag.
+- Exact zero sum: +0 under RNE/RTZ/RUP, −0 under RDN; x − x follows the same rule.
+- Overflow → ±INF or ±max-finite depending on rm, OF+NX.
+- Subnormal inputs/results are handled without flush-to-zero.","1. Every operand-class pair, per op and fmt (2 × 10 × 10 × 3 = 600 bins).
+2. Every reachable result class (9 bins).
+3. fflags: no exception, NX, OF, NV.
+4. Invalid cases: ∞ ± ∞ → NV, sNaN operand → NV.
+5. Zero sign: +0 − (+0) under RNE (→ +0) and under RDN (→ −0).
+6. Subnormal + subnormal giving a subnormal result, and giving a normal result (carry into the smallest normal), each × 4 rm.","fpu_sb compares every response against the C/MPFR ref model:
+- result_o bit-exact (incl. NaN-boxing of FP32/FP16 results)
+- fpu_exception_o.cause (fflags) bit-exact
+- each response matched to its request by trans_id; a response with no pending request is an error
+Pass = 0 UVM_ERROR / UVM_FATAL in the test log.",Functional Coverage (covergroup),"fpu_comput_cov::cg_fadd_fsub
+- cx_fadd_fsub_op1_class_x_op2_class_x_fmt: cp_op × cp_op1_class × cp_op2_class × cp_fmt
+- cp_res_class, cp_flags {NO_EXCEPTION, NX, OF, NV}
+- cp_inf_invalid, cp_nan_invalid
+- cp_sub_zero_rne, cp_sub_zero_rdn
+- cx_subnorm_subnorm_res_x_rnd, cx_subnorm_norm_res_x_rnd
+Sampled on operand_b (rs1) and imm (rs2): fpu_wrap routes FADD/FSUB through those ports, operand_a is unused.","fpu_random_test, fpu_single_op_test, fpu_op_group_test,
+fpu_fmt_random_test, fpu_fmt_single_op_test, fpu_fmt_op_group_test,
+fpu_random_op_bp_test, fpu_op_group_bp_test (back-to-back),
+fpu_special_val_test (ZERO/INF/QNaN/SNaN operands)","No UF bin: structurally unreachable. A tiny sum/difference of two FP numbers is always exact, and RISC-V raises UF only on tiny AND inexact.
+No DZ bin: not defined for add/sub.
+RMM excluded with ignore_bins in every rm coverpoint: the MPFR ref model cannot compute it (known limitation, see TESTS sheet)."
+"RISC-V Unpriv. ISA, F extension: Single-Precision Floating-Point Computational Instructions
+RISC-V Unpriv. ISA, D extension: Double-Precision Floating-Point Computational Instructions
+RISC-V Unpriv. ISA, Zfh chapter (CVA6 XF16 config): Half-Precision Floating-Point Computational Instructions
+IEEE 754-2008: 5.4.1 (multiplication/division), 7.2 (invalid), 7.3 (division by zero), 7.4 (overflow), 7.5 (underflow), 7.6 (inexact)",CG_ARITH,FMUL / FDIV (.S/.D/.H),"rd = rs1 × rs2 / rs1 ÷ rs2, rounded once per rm/frm.
+- ∞ × 0, 0 ÷ 0, ∞ ÷ ∞ → canonical qNaN, NV.
+- finite non-zero ÷ 0 → ±INF, DZ (FDIV only).
+- sNaN operand → canonical qNaN, NV.
+- Tiny inexact result → UF+NX (tininess after rounding); overflow → OF+NX.","1. Every operand-class pair, per op and fmt (2 × 10 × 10 × 3 = 600 bins); covers ∞×0, x÷0, 0÷0, ∞÷∞.
+2. Every reachable result class (9 bins).
+3. fflags: no exception, NX, UF, OF, DZ, NV.
+4. NX under each of the 4 rounding modes.","fpu_sb compares every response against the C/MPFR ref model:
+- result_o bit-exact (incl. NaN-boxing of FP32/FP16 results)
+- fpu_exception_o.cause (fflags) bit-exact
+- each response matched to its request by trans_id; a response with no pending request is an error
+Pass = 0 UVM_ERROR / UVM_FATAL in the test log.",Functional Coverage (covergroup),"fpu_comput_cov::cg_fmul_fdiv
+- cx_fmul_fdiv_op1_class_x_op2_class_x_fmt: cp_op × cp_op1_class × cp_op2_class × cp_fmt
+- cp_res_class
+- cp_flags {NO_EXCEPTION, NX, UF, OF, DZ, NV}
+- cx_inexact_x_rnd (NX × rne/rtz/rdn/rup)","fpu_random_test, fpu_single_op_test, fpu_op_group_test,
+fpu_fmt_random_test, fpu_fmt_single_op_test, fpu_fmt_op_group_test,
+fpu_random_op_bp_test, fpu_op_group_bp_test (back-to-back),
+fpu_special_val_test (ZERO/INF/QNaN/SNaN operands)","cp_flags.DZ can only be hit by FDIV (FMUL never divides); no separate op × DZ cross is needed.
+FMUL runs in the ADDMUL opgroup, FDIV in DIVSQRT (THMULTI c910 divider).
+RMM excluded with ignore_bins in every rm coverpoint: the MPFR ref model cannot compute it (known limitation, see TESTS sheet)."
+"RISC-V Unpriv. ISA, F extension: Single-Precision Floating-Point Computational Instructions
+RISC-V Unpriv. ISA, D extension: Double-Precision Floating-Point Computational Instructions
+RISC-V Unpriv. ISA, Zfh chapter (CVA6 XF16 config): Half-Precision Floating-Point Computational Instructions
+IEEE 754-2008: 5.4.1 (squareRoot), 7.2 (invalid), 7.6 (inexact)",CG_ARITH,FSQRT (.S/.D/.H),"rd = √rs1, rounded per rm/frm.
+- √(−0) = −0, no flag; √(+INF) = +INF.
+- Negative non-zero (incl. −INF) → canonical qNaN, NV.
+- sNaN → canonical qNaN, NV.
+- Result is never subnormal and never negative except −0.","1. Every input class per fmt (10 × 3 = 30 bins).
+2. Result classes −0, +0, +normal, +INF, qNaN (5 bins).
+3. fflags: no exception, NX, NV.
+4. NX under each of the 4 rounding modes.","fpu_sb compares every response against the C/MPFR ref model:
+- result_o bit-exact (incl. NaN-boxing of FP32/FP16 results)
+- fpu_exception_o.cause (fflags) bit-exact
+- each response matched to its request by trans_id; a response with no pending request is an error
+Pass = 0 UVM_ERROR / UVM_FATAL in the test log.",Functional Coverage (covergroup),"fpu_comput_cov::cg_fsqrt
+- cx_op1_class_x_fmt
+- cp_res_class {neg_zero, pos_zero, pos_normal, pos_inf, qnan}
+- cp_flags {NO_EXCEPTION, NX, NV}; DZ ignore_bins
+- cx_inexact_x_rnd","fpu_random_test, fpu_single_op_test, fpu_op_group_test,
+fpu_fmt_random_test, fpu_fmt_single_op_test, fpu_fmt_op_group_test,
+fpu_random_op_bp_test, fpu_op_group_bp_test (back-to-back),
+fpu_special_val_test (ZERO/INF/QNaN/SNaN operands)","Only reachable result classes are binned: √ of the smallest subnormal is far above the subnormal range, and √ of a negative non-zero is NaN.
+Runs in the DIVSQRT opgroup.
+RMM excluded with ignore_bins in every rm coverpoint: the MPFR ref model cannot compute it (known limitation, see TESTS sheet)."
+"RISC-V Unpriv. ISA, F extension: Single-Precision Floating-Point Computational Instructions
+RISC-V Unpriv. ISA, D extension: Double-Precision Floating-Point Computational Instructions
+RISC-V Unpriv. ISA, Zfh chapter (CVA6 XF16 config): Half-Precision Floating-Point Computational Instructions
+IEEE 754-2008: minimumNumber / maximumNumber (IEEE 754-201x, as required by RISC-V ISA ≥ 2.2)",CG_ARITH,FMIN / FMAX (.S/.D/.H),"rd = min/max(rs1, rs2).
+- −0 is considered less than +0.
+- One NaN operand → the other (non-NaN) operand.
+- Both NaN → canonical qNaN.
+- Any sNaN operand → NV; no other flag possible.","1. Both ops × every operand-class pair × fmt (2 × 10 × 10 × 3 = 600 bins); covers ±0 pairs, NaN/number, NaN/NaN.
+2. Every reachable result class (9 bins).
+3. fflags: no exception, NV.","fpu_sb compares every response against the C/MPFR ref model:
+- result_o bit-exact (incl. NaN-boxing of FP32/FP16 results)
+- fpu_exception_o.cause (fflags) bit-exact
+- each response matched to its request by trans_id; a response with no pending request is an error
+Pass = 0 UVM_ERROR / UVM_FATAL in the test log.",Functional Coverage (covergroup),"fpu_comput_cov::cg_fmin_fmax
+- cx_fadd_fsub_op1_class_x_op2_class_x_fmt: cp_op {fmin, fmax} × cp_op1_class × cp_op2_class × cp_fmt
+- cp_res_class, cp_flags {NO_EXCEPTION, NV}
+Op decoded from rm[0] (FMIN_MAX shares one fpnew operation).","fpu_random_test, fpu_single_op_test, fpu_op_group_test,
+fpu_fmt_random_test, fpu_fmt_single_op_test, fpu_fmt_op_group_test,
+fpu_random_op_bp_test, fpu_op_group_bp_test (back-to-back),
+fpu_special_val_test (ZERO/INF/QNaN/SNaN operands)",The cross keeps the name cx_fadd_fsub_op1_class_x_op2_class_x_fmt but belongs to cg_fmin_fmax and crosses FMIN/FMAX.
+"RISC-V Unpriv. ISA, F extension: Single-Precision Floating-Point Computational Instructions
+RISC-V Unpriv. ISA, D extension: Double-Precision Floating-Point Computational Instructions
+RISC-V Unpriv. ISA, Zfh chapter (CVA6 XF16 config): Half-Precision Floating-Point Computational Instructions
+IEEE 754-2008: 5.4.1 (fusedMultiplyAdd), 7.2 (invalid, incl. ∞×0 + qNaN), 7.4, 7.5, 7.6",CG_FMA,FMADD / FMSUB / FNMSUB / FNMADD (.S/.D/.H),"rd = ±(rs1 × rs2) ± rs3 with a single rounding.
+- FMADD: (rs1×rs2)+rs3; FMSUB: (rs1×rs2)−rs3; FNMSUB: −(rs1×rs2)+rs3; FNMADD: −(rs1×rs2)−rs3.
+- ∞ × 0 → NV even when rs3 is a qNaN (RISC-V choice; IEEE leaves it optional).
+- ∞ × finite ± opposite ∞ → NV.
+- sNaN in any operand → NV; result canonical qNaN.
+- Tiny inexact → UF+NX; overflow → OF+NX.","1. 4 ops × every 3-operand class combination (4 × 10 × 10 × 10 = 4000 bins).
+2. Op × fmt (12 bins).
+3. Each operand's class × fmt (3 × 30 bins).
+4. Every reachable result class (9 bins).
+5. fflags: no exception, NX, UF, OF, NV.
+6. NX under each of the 4 rounding modes.","fpu_sb compares every response against the C/MPFR ref model:
+- result_o bit-exact (incl. NaN-boxing of FP32/FP16 results)
+- fpu_exception_o.cause (fflags) bit-exact
+- each response matched to its request by trans_id; a response with no pending request is an error
+Pass = 0 UVM_ERROR / UVM_FATAL in the test log.",Functional Coverage (covergroup),"fpu_comput_cov::cg_fma
+- cx_fma_op1_x_op2_x_op3: cp_op × cp_op1_class × cp_op2_class × cp_op3_class
+- cx_op_x_fmt
+- cx_op1_class_x_fmt, cx_op2_class_x_fmt, cx_op3_class_x_fmt
+- cp_res_class, cp_flags {NO_EXCEPTION, NX, UF, OF, NV}
+- cx_inexact_x_rnd
+rs1 = operand_a, rs2 = operand_b, rs3 = imm.","fpu_random_test, fpu_single_op_test, fpu_op_group_test,
+fpu_fmt_random_test, fpu_fmt_single_op_test, fpu_fmt_op_group_test,
+fpu_random_op_bp_test, fpu_op_group_bp_test (back-to-back),
+fpu_special_val_test (ZERO/INF/QNaN/SNaN operands)","The 4-way class cross is not crossed with fmt (12 000 bins); fmt is covered per operand instead.
+'rs1 = rs2 = rs3' register aliasing is a core concern, not visible at the FPU boundary (no register file).
+DZ cannot be raised by FMA.
+RMM excluded with ignore_bins in every rm coverpoint: the MPFR ref model cannot compute it (known limitation, see TESTS sheet)."
