@@ -127,7 +127,11 @@ digit 9 would give 10, and the bound excludes both. Every value loaded into
 ## 6.7 Effective subtraction in conversions
 
 **Items.** `fpnew_rounding` inside `fpnew_cast_multi` (CONV), sign select
-`(exact_zero_o && effective_subtraction_i) ? … : sign_i`: the true arm.
+`(exact_zero_o && effective_subtraction_i) ? … : sign_i`:
+- the true arm;
+- expression rows: `exact_zero_o = 1` and `effective_subtraction_i = 1` in the
+  context of the other, and both `rnd_mode_i == RDN` rows, which are
+  observable only in the true arm.
 
 **Why.** `fpnew_cast_multi` ties `effective_subtraction_i` to `1'b0`, because a
 conversion performs no addition.
@@ -162,7 +166,9 @@ and in the BUSY-completion path.
 **Items.** `ct_vfdsu_prepare`, both NaN-payload priority chains:
 - the arms selecting an operand's sNaN/qNaN payload
   (`ex1_op*_is_*nan && vfpu_yy_xx_dqnan`), with their statements;
-- their FEC rows with `vfpu_yy_xx_dqnan = 1`.
+- their FEC rows with `vfpu_yy_xx_dqnan = 1`;
+- expression `ex1_op*_sign && !ex1_op*_cnan` in the qNaN-sign arms: every FEC
+  row, since the arm is never evaluated.
 
 **Why.** `fpnew_divsqrt_th_64_multi` ties `vfpu_yy_xx_dqnan` to `1'b0`. RISC-V
 requires the canonical NaN, so payload propagation is disabled, and only the
@@ -182,12 +188,17 @@ lane's auxiliary data.
 <a id="s6-11"></a>
 ## 6.11 Classify result in the ADDMUL group
 
-**Items.** `fpnew_opgroup_fmt_slice` (ADDMUL),
-`result_o = result_is_class ? slice_class_result : slice_regular_result`: the
-true arm.
+**Items.** `fpnew_opgroup_fmt_slice` (ADDMUL):
+- `result_o = result_is_class ? slice_class_result : slice_regular_result`:
+  the true arm;
+- expression `local_sign` of `vectorial_class`
+  (`lane_class_mask == NEGINF || … NEGNORM || … NEGSUBNORM || … NEGZERO`):
+  every row except `== NEGINF` at 1.
 
 **Why.** The ADDMUL lanes tie `lane_is_class` to `1'b0` (an FMA never
-classifies), and `result_is_class` is `lane_is_class[0]`.
+classifies), and `result_is_class` is `lane_is_class[0]`. They also tie
+`lane_class_mask` to the constant `NEGINF`, so the first compare is always 1
+and the others are always 0.
 
 <a id="s6-12"></a>
 ## 6.12 EX1 always sees `op_sel = 1` (C910 control)
@@ -220,6 +231,11 @@ arbiter builds its masks with the same ternaries for every index, including
   of the `lower_mask[0]` ternary.
 - `lzc` of every `i_lzc_upper`: the true arm of the last-level leaf that tests
   input bit 0 (`in_tmp[0] == 1 ? …`).
+- Expression rows: the condition rows of `0 > rr_q` / `0 <= rr_q` and the
+  `req_d[0]` rows under `0 > rr_q`; in every `i_lzc_upper`, the `in_tmp[0] = 1`
+  row of the leaf `in_tmp[0] | in_tmp[1]`, and in the DIVSQRT and CONV upper
+  LZCs (where index 0 is the only request) the `_1` row of every child node
+  whose only live input is bit 0.
 
 **Why.** `rr_q` is unsigned, so `0 > rr_q` is always false and `0 <= rr_q` is
 always true. `upper_mask[0]` is therefore always 0, and the upper LZC never
@@ -249,3 +265,89 @@ nodes listed below: the true arm of
 
 Example: FP32 node (4,13) starts at 13·4 = 52 ≥ 51, while (4,12) starts at
 48 < 51 and is measured.
+
+Expression rows: in `sel_nodes = sel_nodes[left] | sel_nodes[right]`, the `_1`
+row of every child that holds only padding. These are both children of the
+nodes in the table, and the right child of FP32 (2,3), (3,6); FP64 (2,3),
+(5,27); FP16 (2,3), (3,6).
+
+<a id="s6-15"></a>
+## 6.15 External register enable tied off
+
+**Items.** Expression rows:
+- `reg_ena = (…_pipe_ready[i] & …_pipe_valid_q[i]) | reg_ena_i[…]` of every
+  input, inside and output pipeline stage of `fpnew_fma`, `fpnew_noncomp`,
+  `fpnew_cast_multi` and `fpnew_divsqrt_th_64_multi`: the `reg_ena_i = 1` row;
+- `fpnew_divsqrt_th_64_multi`, `div_valid`/`sqrt_valid`: the
+  `ext_op_start_q = 1` row, and the C910 flush `flush_i | last_inp_reg_ena`:
+  the `last_inp_reg_ena = 1` row.
+
+**Why.** `fpnew_opgroup_block` ties `reg_ena_i` of every slice to `'0`. In the
+divider, `last_inp_reg_ena = reg_ena_i[NUM_INP_REGS-1]` and
+`ext_op_start_q` is a register of `last_inp_reg_ena`, so both are 0.
+
+<a id="s6-16"></a>
+## 6.16 C910 clock-gating and scalar-mode tie-offs
+
+**Items.** Expression rows:
+- `gated_clk_cell`, `clk_en = global_en && (module_en || local_en) || external_en`,
+  all 13 C910 instances: `global_en = 0`, `module_en = 1` and
+  `external_en = 1`; in `x_div_sm_clk` also `local_en = 0` and the
+  `module_en`/`external_en = 0` rows that need it;
+- `ct_vfdsu_ctrl`, `div_sm_clk_en = dp_vfdsu_fdiv_gateclk_issue || !(div_cur_state == IDLE)`:
+  the `gateclk_issue = 0` row and both state rows;
+- `ct_vfdsu_prepare`, cNaN detection
+  `ex1_scalar && !ex1_double && !ex1_oper*_high_all1`: the `ex1_scalar = 0` row.
+
+**Why.**
+- `fpnew_divsqrt_th_64_multi` ties `cp0_yy_clk_en` (`global_en`) to 1,
+  `cp0_vfpu_icg_en` (`module_en`) to 0 and `dp_vfdsu_fdiv_gateclk_issue` to 1.
+  Every C910 clock gate ties `external_en` to `1'b0`.
+- `x_div_sm_clk` uses `div_sm_clk_en` as `local_en`, which is 1 because
+  `dp_vfdsu_fdiv_gateclk_issue` is 1. The state term is then masked.
+- `ct_vfdsu_scalar_dp` ties `ex1_scalar` to `1'b1`.
+
+<a id="s6-17"></a>
+## 6.17 Low quotient bits tied to zero (C910 round)
+
+**Items.** `ct_vfdsu_round`, FP64 round-bit decode with the quotient's leading
+1 at bit 55 (`total_qt_rt_58[56] = 0`):
+- `ex3_doub_gr = … : total_qt_rt_58[2] && ex3_qt_doub_lo2_not0`: the `_1` rows
+  of both terms;
+- `ex3_doub_eq = … : total_qt_rt_58[2] && !ex3_qt_doub_lo2_not0`: the
+  `ex3_qt_doub_lo2_not0 = 1` row.
+
+**Why.** `ct_vfdsu_srt` outputs
+`total_qt_rt_58 = {total_qt_rt[57:2], 2'b00}`, so
+`ex3_qt_doub_lo2_not0 = |total_qt_rt_58[1:0]` is the constant 0. The
+`total_qt_rt_58[2] = 1` row of `ex3_doub_gr` needs `lo2_not0 = 1` to be
+observable. In this case the guard bit is `total_qt_rt_58[2]`, and the bits
+below it are given by the remainder (`vfdsu_ex3_rem_zero`,
+`vfdsu_ex3_rem_sign`), so the FP64 results are unaffected. They are checked
+bit-exactly against the reference model.
+
+<a id="s6-18"></a>
+## 6.18 Masked expression terms
+
+**Items and reasons.** Expression rows where another operand of the same logic
+masks the term:
+- **`ct_vfdsu_pack`**, `ex4_of_plus = vfdsu_ex4_potnt_of && |ex4_frac[54:53] && ex4_rst_nor`:
+  the `ex4_rst_nor = 0` row.
+  - `potnt_of` needs a divide with two finite non-zero operands
+    (`op0_norm && op1_norm`). That excludes every zero, NaN and infinity
+    result of EX1.
+  - The remaining `rst_nor = 0` source is the EX2 overflow (`result_lfn`, or
+    `result_inf` from `ex2_of_plus`). It decodes the same `vfdsu_ex2_expnt_rst`
+    as `potnt_of`, and the two exclude each other: in FP64, `potnt_of` is
+    exponent = 1024 exactly and the overflow is exponent > 1024 (FP32, BF16 and
+    FP16 alike).
+  - Both flags travel in the same pipeline registers, so `potnt_of` implies
+    `rst_nor`.
+- **`ct_vfdsu_srt`**, `ex2_potnt_uf = (A && B && op1_norm && div) || (A && B)`:
+  the `vfdsu_ex2_op1_norm = 0` and `vfdsu_ex2_div = 0` rows. The second
+  disjunct contains the first, so whenever the first could change the output,
+  the second already makes it 1.
+- **`fpnew_fma`**, `regular_status.NX = |round_sticky_bits | of_before_round | of_after_round`:
+  the `of_before_round = 1` row, which needs `round_sticky_bits = 0`.
+  `round_sticky_bits = of_before_round ? 2'b11 : …`, so `of_before_round = 1`
+  always comes with sticky bits set.

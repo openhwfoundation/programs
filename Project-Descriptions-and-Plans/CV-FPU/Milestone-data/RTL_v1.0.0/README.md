@@ -88,7 +88,7 @@ output ready to 1.
 enabled in CVA6 by `XF16`): add, sub, mul, fused multiply-add (4 variants), div, sqrt, min/max,
 sign injection, compare, classify, FP–FP conversions, FP–integer conversions in
 both directions (32- and 64-bit, signed and unsigned), and moves. Rounding modes
-RNE, RTZ, RDN, RUP and DYN; flush and reset during operation; output
+RNE, RTZ, RDN, RUP and DYN; flush and reset during operation; input
 back-pressure at the FPU boundary.
 
 **Out of scope** (disabled in this configuration, or not in the RISC-V
@@ -99,10 +99,12 @@ ROD rounding.
 because the MPFR-based reference model cannot round ties away from zero. See
 [`Waivers/README.md`](Waivers/README.md).
 
-**Coverage scope.** Code coverage is measured on `/top/dut` only, with
-statement, branch, condition and FSM metrics. Toggle and expression coverage
-and the testbench code are not TRL-5 metrics. Functional coverage includes all
-covergroups, assertions and cover directives.
+**Coverage scope.** Code coverage is measured on `/top/dut` and below, with
+statement, branch, condition, expression and FSM metrics. Expression coverage
+is Questa's focused expression coverage (FEC) of the right-hand side of
+assignments. Toggle coverage and the testbench code are not TRL-5 metrics. Functional coverage is measured
+with covergroups and cover directives. Assertions are checkers: they are
+counted by failures, not as coverage.
 
 ### Tools
 
@@ -125,16 +127,25 @@ Regression (`simu/fpu_reg_list`): 11 tests, 186 runs, **186 pass, 0 fail**. Per-
 | Statement | 5404 | 5294 | 97.96% | 110 | **100.00%** |
 | Branch | 3371 | 3170 | 94.03% | 201 | **100.00%** |
 | Condition | 167 | 133 | 79.64% | 41 FEC rows | **100.00%** |
+| Expression | 2223 | 1849 | 83.17% | 374 terms (487 FEC rows) | **100.00%** |
 | FSM state | 9 | 8 | 88.88% | 1 | **100.00%** |
 | FSM transition | 16 | 13 | 81.25% | 3 | **100.00%** |
 
-The 356 waived items, by category:
-- 1 rounding modes: 36
-- 2 vector operations: 126
-- 3 FP8/FP16ALT: 31
-- 4 MERGED units: 28
-- 5 `fpu_out_ready`: 25
-- 6 structurally unreachable: 110
+Questa counts expression bins per input term. After the waivers it reports
+2111 of 2111 expression bins: a term whose missing rows are excluded counts as
+covered, and a term with every row excluded is removed from the total.
+
+The 843 waived items (356 statement, branch, condition and FSM items, plus
+487 expression FEC rows), by category:
+
+| Category | S / B / C / FSM | Expression rows |
+| --- | ---: | ---: |
+| 1 rounding modes | 36 | 32 |
+| 2 vector operations | 126 | 43 |
+| 3 FP8/FP16ALT | 31 | 89 |
+| 4 MERGED units | 28 | 152 |
+| 5 `fpu_out_ready` | 25 | 7 |
+| 6 structurally unreachable | 110 | 164 |
 
 See [`Waivers/README.md`](Waivers/README.md).
 
@@ -143,8 +154,11 @@ See [`Waivers/README.md`](Waivers/README.md).
 | Item | Total | Hit | Coverage |
 | --- | ---: | ---: | ---: |
 | Covergroups (17) — bins | 8480 | 8480 | 100.00% |
-| Assertions | 67 | 67 | 100.00% (0 failures) |
 | Cover directives | 66 | 66 | 100.00% |
+
+**Assertions** (checkers): 67, with 0 failures over the 186 runs. 43 are
+concurrent assertions, and each one passed at least once with its condition
+true. The other 24 are parameter checks done once at startup (`ASSERT_INIT`).
 
 RTL lint: Verilator 5.048 `-Wall` gives no errors and 494 warnings, all waived
 in [`Reports/Lint/README.md`](Reports/Lint/README.md).
@@ -158,6 +172,6 @@ in [`Reports/Lint/README.md`](Reports/Lint/README.md).
 | [`Waivers/`](Waivers/) | `exclude.do`, how it is organised and applied ([`Waivers/README.md`](Waivers/README.md)), and one proof file per waiver category. |
 | [`CVFPU_waiver_list.xlsx`](CVFPU_waiver_list.xlsx) | Every waived code coverage item, with its `exclude.do` command and proof link; post-waiver coverage summary. |
 | [`CVFPU_Design_Issue_Summary.xlsx`](CVFPU_Design_Issue_Summary.xlsx) | GitHub issues of openhwgroup/cvfpu at release time, with their `DoesNotGate_v1.0.0` status. |
-| [`Reports/Coverage/`](Reports/Coverage/README.md) | Questa coverage reports in HTML and text: `code_cov/` (DUT code coverage after waivers, with excluded items shown) and `funct_cov/` (covergroups, assertions, cover directives). |
+| [`Reports/Coverage/`](Reports/Coverage/README.md) | Questa coverage reports in HTML and text: `code_cov/` (DUT statement, branch, condition, expression and FSM coverage after waivers, with excluded items shown) and `funct_cov/` (covergroups and cover directives, plus assertion failure and pass counts). |
 | [`Reports/Simulation/`](Reports/Simulation/) | Regression list and per-test results. |
 | [`Reports/Lint/`](Reports/Lint/README.md) | RTL lint log and the waiver reason for each warning class. The lint wrapper and file list are in `lint/` of cvfpu-uvm. |

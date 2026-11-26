@@ -18,8 +18,8 @@ does not hit, and why it is waived.
 
 Waivers apply only to the DUT, `/top/dut` (`fpu_wrap` and everything below it:
 `fpnew_top` and the vendored divider RTL), and only to the TRL-5 code coverage
-metrics: statement, branch, condition and FSM. Toggle and expression coverage
-are not TRL-5 metrics. Testbench code is not counted.
+metrics: statement, branch, condition, expression and FSM. Toggle coverage is
+not a TRL-5 metric. Testbench code is not counted.
 
 An item is waived only if it is **structurally unreachable** in the verified
 configuration. That means a parameter of the configuration, a tie-off, or a
@@ -43,36 +43,52 @@ grouped in three levels:
    with the list of items and the proof.
 3. **Command**: `coverage exclude -du <design unit> -code <s|b|c> -linerange
    <lines> [-scope <instance>] -comment {<reason>}`. FSM items use
-   `-fstate`/`-ftrans`, and condition rows use `-feccondrow`. Every command has a
+   `-fstate`/`-ftrans`, condition rows use `-feccondrow`, and expression rows
+   use `-item e 1 -fecexprrow <line> <rows>`. Every command has a
    mandatory `-comment` that states the consequence of the category for those
    lines. The comment appears in the Questa report next to the excluded item.
 
 `-du` applies the command to every instance of the design unit. `-scope`
 restricts it to one instance, when the item is reachable in other instances.
+An expression inside a `for`-generate loop belongs to the scope of its loop
+iteration (for example `…/gen_lzc/g_levels[2]/g_last_level/g_level[1]/g_reduce`),
+which the Questa report shows as `GI=<level>,<index>`, so those rows are
+excluded with `-scope` on that iteration.
+
+An expression row is waived only if it has no hits and the term it targets is
+structurally unreachable. A ternary (bimodal) row has one hit count per output
+value; `-col 1` waives only its output-1 column. This is used once, for
+`fpu_wrap` `fpu_vec_op = use_hold ? fpu_vec_op_q : fpu_vec_op_d` (2.6): both
+`use_hold` rows hit only with output 0, and output 1 is unreachable. Their
+output-0 hits stay in the report.
 
 ### Categories
 
-| # | Category | Cause | Commands | Holes (S / B / C / FSM) | Proofs |
+| # | Category | Cause | Commands | Holes (S / B / C / E / FSM) | Proofs |
 | --- | --- | --- | ---: | ---: | --- |
-| 1 | Undriven rounding modes: RMM/ROD | RMM is legal but not stimulated (the reference model cannot check it). ROD and the reserved encodings never reach the arithmetic units. | 11 | 36 (18 / 18 / 0 / 0) | [`cat1_rounding_modes.md`](details/cat1_rounding_modes.md) |
-| 2 | FPU config: vector operations are disabled | `XFVec = 0`: scalar only, so the SIMD paths are dead. | 68 | 126 (54 / 61 / 11 / 0) | [`cat2_disabled_vector_ops.md`](details/cat2_disabled_vector_ops.md) |
-| 3 | FPU config: FP8 and FP16ALT formats are disabled | `XF8 = XF16ALT = 0`. | 11 | 31 (2 / 29 / 0 / 0) | [`cat3_disabled_formats.md`](details/cat3_disabled_formats.md) |
-| 4 | FPU config: DIVSQRT and CONV use MERGED units | Only the first format slot of a MERGED operation group raises requests. | 8 | 28 (0 / 28 / 0 / 0) | [`cat4_unit_type.md`](details/cat4_unit_type.md) |
-| 5 | `fpu_wrap` ties `fpu_out_ready` to 1 | The FPU output is never stalled. | 17 | 25 (8 / 8 / 5 / 4) | [`cat5_out_ready.md`](details/cat5_out_ready.md) |
-| 6 | Structurally unreachable | Complete case/default arms, padding, protocol invariants, and other tie-offs not covered above. | 46 | 110 (28 / 57 / 25 / 0) | [`cat6_structural.md`](details/cat6_structural.md) |
-| | **Total** | | **161** | **356** | |
+| 1 | Undriven rounding modes: RMM/ROD | RMM is legal but not stimulated (the reference model cannot check it). ROD and the reserved encodings never reach the arithmetic units. | 15 | 68 (18 / 18 / 0 / 32 / 0) | [`cat1_rounding_modes.md`](details/cat1_rounding_modes.md) |
+| 2 | FPU config: vector operations are disabled | `XFVec = 0`: scalar only, so the SIMD paths are dead. | 80 | 169 (54 / 61 / 11 / 43 / 0) | [`cat2_disabled_vector_ops.md`](details/cat2_disabled_vector_ops.md) |
+| 3 | FPU config: FP8 and FP16ALT formats are disabled | `XF8 = XF16ALT = 0`. | 33 | 120 (2 / 29 / 0 / 89 / 0) | [`cat3_disabled_formats.md`](details/cat3_disabled_formats.md) |
+| 4 | FPU config: DIVSQRT and CONV use MERGED units | Only the first format slot of a MERGED operation group raises requests. | 27 | 180 (0 / 28 / 0 / 152 / 0) | [`cat4_unit_type.md`](details/cat4_unit_type.md) |
+| 5 | `fpu_wrap` ties `fpu_out_ready` to 1 | The FPU output is never stalled. | 20 | 32 (8 / 8 / 5 / 7 / 4) | [`cat5_out_ready.md`](details/cat5_out_ready.md) |
+| 6 | Structurally unreachable | Complete case/default arms, padding, protocol invariants, and other tie-offs not covered above. | 77 | 274 (28 / 57 / 25 / 164 / 0) | [`cat6_structural.md`](details/cat6_structural.md) |
+| | **Total** | | **252** | **843** | |
 
 Holes are counted in the regression (pre-waiver `merged.ucdb`): S =
-statement, B = branch, C = condition FEC row, FSM = state or transition. After
-the waivers, coverage is 100% on all four metrics.
+statement, B = branch, C = condition FEC row, E = expression FEC row with no
+hits, FSM = state or transition. The 487 expression rows cover 374 expression
+terms (Questa's expression bins). After the waivers, coverage is 100% on all
+five metrics.
 
 Numbering notes:
-- Section 1.2 of `cat1_rounding_modes.md` (ROD) has no `# 1.2` header in
-  `exclude.do`. The ROD arm of `fpnew_rounding` sits on the same lines as the
-  RMM arm, so the `fpnew_rounding` commands under `# 1.1` waive both, and their
-  comment names both.
-- Condition holes are listed per FEC row in the register. Questa's condition
-  bins count input terms, so the two counts differ.
+- The statement and branch items of section 1.2 (ROD) are under the `# 1.1`
+  header of `exclude.do`. The ROD arm of `fpnew_rounding` sits on the same
+  lines as the RMM arm, so the `fpnew_rounding` commands under `# 1.1` waive
+  both, and their comment names both. The `# 1.2` header holds only the
+  expression rows of the ROD arm.
+- Condition and expression holes are listed per FEC row in the register.
+  Questa's condition and expression bins count input terms, so the counts
+  differ.
 
 ## Open items
 

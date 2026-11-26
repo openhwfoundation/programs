@@ -15,8 +15,12 @@ has a dedicated FPU write-back port, so a result is never back-pressured.
 (`i_arbiter/…/gen_fair_arb`), condition `rr_d = (gnt_i && req_o) ? …`: the
 FEC row with `gnt_i = 0`.
 
+Expression rows: the root grant split of the same arbiter,
+`gnt_nodes[1] = gnt_nodes[0] & ~sel` and `gnt_nodes[2] = gnt_nodes[0] & sel`:
+the row with `gnt_nodes[0] = 0`.
+
 **Why.** This arbiter's `gnt_i` is `fpnew_top.out_ready_i`, which is the
-constant 1. The format arbiters inside the operation groups do see
+constant 1, and `gnt_nodes[0] = gnt_i`. The format arbiters inside the operation groups do see
 `gnt_i = 0`, so this row is waived for the top arbiter only.
 
 <a id="s5-2"></a>
@@ -54,11 +58,15 @@ FPU, HOLD would become reachable.
 <a id="s5-3"></a>
 ## 5.3 Hold-register enable
 
-**Items.** `fpnew_divsqrt_th_64_multi`, the load arms of the `held_result_q`
-and `held_status_q` registers (`FFLNR(…, hold_en, …)`) and their statements.
+**Items.**
+- `fpnew_divsqrt_th_64_multi`, the load arms of the `held_result_q` and
+  `held_status_q` registers (`FFLNR(…, hold_en, …)`) and their statements.
+- Expression rows of `hold_en`: `unit_done = 1` and `out_ready = 0` under the
+  stall condition, both `simd_synch_done_i` rows, and `result_vec_op_q = 1`.
 
 **Why.**
 `hold_en = unit_done & (~simd_synch_done_i | ~out_ready) & ~(~result_vec_op_q & out_ready)`.
 - In scalar mode `result_vec_op_q = 0` (category 2), so this reduces to
   `unit_done & ~out_ready`.
-- That is the stall condition that 5.2 shows cannot occur.
+- That is the stall condition that 5.2 shows cannot occur. The
+  `simd_synch_done_i` and `result_vec_op_q` rows need a vectorial operation.

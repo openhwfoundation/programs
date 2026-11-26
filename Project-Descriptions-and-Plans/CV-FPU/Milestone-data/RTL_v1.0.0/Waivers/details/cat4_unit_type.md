@@ -27,6 +27,17 @@ result, the format arbiter of DIVSQRT and CONV sees:
 In the PARALLEL groups, FP64 and FP16 raise real requests, so none of this
 applies there.
 
+`rr_arb_tree` tree nodes of `NumIn = 5` (padded to 8 leaves):
+
+| Tree node | Inputs |
+| --- | --- |
+| leaf (2,0) = node 3 | `req[0]`, `req[1]` |
+| leaf (2,1) = node 4 | `req[2]`, `req[3]` |
+| leaf (2,2) = node 5 | `req[4]` |
+| leaf (2,3) = node 6 | padding |
+| node (1,0) = node 1 | nodes 3 and 4 |
+| node (1,1) = node 2 | nodes 5 and 6 |
+
 <a id="s4-1"></a>
 ## 4.1 Format-arbiter masks and next index (DIVSQRT, CONV)
 
@@ -80,3 +91,34 @@ arm of `index_nodes = (sel_nodes[left] == 1) ? …`.
 **Why.** The left child covers mask bits 0–3, all of which are 0 in the upper
 mask of a MERGED group (see the introduction). So `sel_nodes[left]` is
 constantly 0.
+
+<a id="s4-6"></a>
+## 4.6 Idle slots of the DIVSQRT and CONV format arbiters
+
+**Items.** Expression FEC rows of the DIVSQRT and CONV format arbiters:
+- `gen_mask[1..4]`: the mask ternaries' condition rows and the `req_d[i] = 1`
+  row;
+- leaves (2,0) and (2,1): the `req_d[1..3] = 1` rows of `req_d[l*2] | req_d[l*2+1]`;
+  in `sel` the rows with `req_d[1..3] = 1` and both `rr_q[0]` rows; at leaf
+  (2,1) the grant split `gnt_nodes[4] & ~sel` / `& sel`: the `sel = 0` rows
+  and the `gnt_nodes[4]` rows under `~sel`;
+- the root and nodes (1,0), (1,1): the `req_nodes` rows with node 2, 4, 5 or 6
+  = 1, their `sel` rows and both `rr_q` rows, and the grant split of node (1,1);
+- `i_lzc_lower` and `i_lzc_upper`: the `_1` rows of every leaf input and child
+  node that holds only indices 1–4 or padding.
+
+**Why.** Only `req[0]` is live, and `rr_q = 0` forever (see the introduction).
+Every row above needs a request at index 1–4, a non-zero `rr_q` bit, or a
+right child that requests. The `i_lzc_upper` rows whose only live input is
+bit 0 are waived in 6.13, because `upper_mask[0]` is always 0.
+
+<a id="s4-7"></a>
+## 4.7 MERGED unit-type check on the slice input valid
+
+**Items.** `fpnew_opgroup_block` of DIVSQRT and CONV,
+`in_valid = in_valid_i & (FmtUnitTypes[dst_fmt_i] == MERGED)`: the FEC row with
+the compare at 0.
+
+**Why.** In these two groups every format's unit type is MERGED (see the
+table above), so the compare is the constant 1. The PARALLEL groups have no
+merged slice, so the expression exists only in DIVSQRT and CONV.

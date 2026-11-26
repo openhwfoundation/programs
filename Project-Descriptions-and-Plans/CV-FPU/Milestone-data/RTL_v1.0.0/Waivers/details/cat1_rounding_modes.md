@@ -29,6 +29,8 @@ The units therefore see only RNE, RTZ, RDN and RUP.
 - `ct_vfdsu_prepare`: the `3'b100` arm of the overflow-to-LFN case.
 - `ct_vfdsu_round`: the `3'b100` arm of the rounding case, with its statements
   and the denormal-select ternaries inside it.
+- Expression rows: every FEC row of the three ternaries in that arm
+  (`frac_add_1`, `frac_orig` and `denorm_to_tiny_frac`).
 
 **Why.** These arms decode `rm = 100`, which is legal and reachable in the
 design. They stay uncovered only because the stimulus never issues RMM (see
@@ -37,7 +39,11 @@ above).
 <a id="s1-2"></a>
 ## 1.2 ROD has no scalar encoding
 
-**Items.** `fpnew_rounding`: the `ROD` case arm, in every instance.
+**Items.**
+- `fpnew_rounding`: the `ROD` case arm, in every instance.
+- Expression rows: the four FEC rows of
+  `round_up = ~abs_value_i[0] & (| round_sticky_bits_i)` in that arm, in every
+  instance (`# 1.2` in `exclude.do`).
 
 **Why.** ROD is fpnew's `3'b101`. On the scalar path, 101 is either illegal or
 (with `XF16ALT = 1`) re-interpreted by `fpu_wrap` as an FP16ALT format select
